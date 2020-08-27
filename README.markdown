@@ -12,10 +12,19 @@ For running manually on a development (or integrating into other workflows), the
 $ SOURCE_URL="" \
   BUCKET_ID="" \
   BUCKET_PATH="" \
+  S3_REGION="" \
   node index.js
 ```
 
 If there are errors downloading or uploading the file, a message will be printed to console and the tool will exit with a non-zero status.
+
+**SOURCE_URL**: URL of file to download, including username and password if necessary.
+
+**BUCKET_ID**: The S3 bucket for the destination resource.
+
+**BUCKET_PATH**: The key for the resource to create in the S3 bucket.
+
+**S3_REGION**: Region for the S3 bucket. (e.g. `us-east-1`)
 
 ## REQUIREMENTS
 
