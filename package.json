@@ -10,5 +10,8 @@
     "arcticconnect"
   ],
   "author": "James Badger",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "basic-ftp": "^4.6.2"
+  }
 }
