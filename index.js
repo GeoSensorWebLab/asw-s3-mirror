@@ -2,7 +2,7 @@
  * Arctic Sensor Web S3 Mirror Tool
  */
 "use strict";
-const ftp                     = require("basic-ftp")
+const FTPDownloader           = require("./lib/FTPDownloader.js")
 const getInputFromEnvironment = require("./lib/EnvironmentVars.js")
 const validateInput           = require("./lib/InputValidator.js")
 
@@ -22,27 +22,11 @@ async function main() {
   // Download from source
   let url = new URL(sourceUrl)
   if (url.protocol.match(/^ftp/i) !== null) {
-    // Fix spaces in URL that don't apply to FTP
-    let path = url.pathname
-    path = path.replace(/%20/g, " ")
-    
     // connect FTP
-    let client = new ftp.Client()
-    client.ftp.verbose = true
-    try {
-      await client.access({
-        host:     url.host,
-        user:     url.username,
-        password: url.password,
-        secure:   (url.protocol === "ftps:")
-      })
-      
-      await client.downloadTo(localFile, path)
-    } catch(err) {
-      console.error(err)
-    }
-    client.close()
-
+    let downloader = new FTPDownloader(url)
+    await downloader.connect()
+    await downloader.saveTo(localFile)
+    downloader.close()
   } else {
     console.error("Error: Unsupported URL scheme")
     process.exit(2)
