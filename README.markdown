@@ -13,6 +13,7 @@ $ SOURCE_URL="" \
   BUCKET_ID="" \
   BUCKET_PATH="" \
   S3_REGION="" \
+  TMP_DIR="tmp" \
   node index.js
 ```
 
@@ -25,6 +26,8 @@ If there are errors downloading or uploading the file, a message will be printed
 **BUCKET_PATH**: The key for the resource to create in the S3 bucket.
 
 **S3_REGION**: Region for the S3 bucket. (e.g. `us-east-1`)
+
+**TMP_DIR**: Path to directory where downloaded files will be stored temporarily. Files should not be expected to persist after the tool is finished. On AWS Lambda, `/tmp` should be used; for local testing, `tmp` (directory in this repo) can be used.
 
 ## REQUIREMENTS
 

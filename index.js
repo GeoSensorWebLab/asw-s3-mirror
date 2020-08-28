@@ -5,9 +5,6 @@
 const ftp = require("basic-ftp")
 
 async function main() {
-  let outputDir = "tmp"
-  let localFile = `${outputDir}/data_temp`
-
   let errors = []
 
   // Check for Environment Variables
@@ -15,6 +12,7 @@ async function main() {
   const bucketID   = process.env["BUCKET_ID"]
   const bucketPath = process.env["BUCKET_PATH"]
   const s3Region   = process.env["S3_REGION"]
+  const tmpDir     = process.env["TMP_DIR"]
 
   if (sourceUrl === undefined) {
     errors.push("Missing SOURCE_URL")
@@ -32,6 +30,10 @@ async function main() {
     errors.push("Missing S3_REGION")
   }
 
+  if (tmpDir === undefined) {
+    errors.push("Missing TMP_DIR")
+  }
+
   // Force quit if any errors present
   if (errors.length > 0) {
     console.error("Error!")
@@ -40,6 +42,8 @@ async function main() {
     })
     process.exit(1)
   }
+  
+  let localFile = `${tmpDir}/data_temp`
 
   // Download from source
   let url = new URL(sourceUrl)
