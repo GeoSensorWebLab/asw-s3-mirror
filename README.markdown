@@ -39,6 +39,14 @@ For usage with AWS Lambda, the tool must be packaged in a ZIP archive along with
 
 The ZIP file must then be uploaded to an S3 bucket, and that bucket configured as the source for the AWS Lambda(s). A Terraform script (private currently) is used to set up these AWS resources.
 
+## CAVEATS
+
+The `last-modified` header will contain the date the file was uploaded to S3, **NOT** when the original file was last modified. When the file is uploaded to S3, AWS will set the `last-modified` header and there is 100% no way for me to change that. If you try to submit a custom `last-modified`, then it is stored in `x-amz-meta-last-modified` instead.
+
+You may rely on `last-modified`, but it may present an older file as newer than it actually is, and you can check `x-amz-meta-last-modified` for the actual date. Unfortunately `x-amz-meta-last-modified` is not compatible with the other HTTP cache check headers.
+
+The difference between the two headers may be as low as the CloudWatch interval running the Lambda (typically under an hour), or much larger if the source file has not been recently updated.
+
 ## LICENSE
 
 MIT License
