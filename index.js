@@ -2,7 +2,7 @@
  * Arctic Sensor Web S3 Mirror Tool
  */
 "use strict";
-const fs                      = require('fs')
+const fs                      = require("fs")
 const FTPDownloader           = require("./lib/FTPDownloader.js")
 const S3Sync                  = require("./lib/S3Sync.js")
 const getInputFromEnvironment = require("./lib/EnvironmentVars.js")
@@ -23,7 +23,7 @@ async function main() {
   let localFile = `${tmpDir}/data_temp`
 
   // Get details of current S3 object for comparison to data source
-  let s3sync = new S3Sync()
+  let s3sync                  = new S3Sync()
   let destinationLastModified = null
 
   try {
@@ -87,8 +87,9 @@ async function main() {
       CacheControl: "no-store",
       Key:          bucketPath,
       Metadata:     {
-        // this actually goes into `x-amz-meta-last-modified`
-        "Last-Modified": sourceLastModified.toUTCString()
+        // Setting 'Last-Modified' goes into `x-amz-meta-last-modified`,
+        // so we are explicitly setting that property instead.
+        "x-amz-meta-last-modified": sourceLastModified.toUTCString()
       },
       Tagging:      "arcticconnect=arcticsensorweb"
     })
