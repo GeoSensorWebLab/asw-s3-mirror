@@ -5,6 +5,7 @@
 const AWS                     = require("aws-sdk")
 const fs                      = require('fs')
 const FTPDownloader           = require("./lib/FTPDownloader.js")
+const S3Sync                  = require("./lib/S3Sync.js")
 const getInputFromEnvironment = require("./lib/EnvironmentVars.js")
 const validateInput           = require("./lib/InputValidator.js")
 
@@ -22,35 +23,25 @@ async function main() {
 
   let localFile = `${tmpDir}/data_temp`
 
-  // Get details of current S3 version for comparison to data source
-  let s3 = new AWS.S3()
-  let checkResults = null
+  // Get details of current S3 object for comparison to data source
+  let S3 = new S3Sync()
+  let destinationLastModified = null
 
   try {
-    checkResults = await s3.headObject({
+    destinationLastModified = await S3.lastModified({
       Bucket: bucketID,
       Key:    bucketPath,
-    }).promise()
-    console.log("Destination checked.")
+    })
   } catch (err) {
-    // If the file is not found, that is okay. Other errors may
-    // indicate a different problem.
-    if (err.code !== "NotFound") {
-      console.error(err)
-      process.exit(1)
-    } else {
-      console.log("No file in destination.")
-    }
+    console.error(err)
+    process.exit(1)
   }
 
-  // If checkResults is null, then the file does not exist.
-  // Otherwise, it exists and we check the last modified date.
-  // By default the last modified will be in the far past, to guarantee
-  // an update with a newer file. "-1000" will even catch files that
-  // have incorrect last modified of the default UNIX epoch.
-  let destinationLastModified = new Date(-1000)
-  if (checkResults !== null) {
-    let destinationLastModified = checkResults.LastModified
+  // If the file does not exist, `null` would be returned. In that case,
+  // a destination date in the far past is used to ensure it is
+  // overwritten.
+  if (destinationLastModified === null) {
+    destinationLastModified = new Date(-1000)
   }
 
   // Download from source.
@@ -81,6 +72,7 @@ async function main() {
     process.exit(2)
   }
 
+  let s3 = new AWS.S3()
   // Upload to S3.
   // File must be set as public read for public download via HTTP.
   // The Cache Control "no-store" will ensure compliant proxies/browsers
