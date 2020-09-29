@@ -2,7 +2,6 @@
  * Arctic Sensor Web S3 Mirror Tool
  */
 "use strict";
-const AWS                     = require("aws-sdk")
 const fs                      = require('fs')
 const FTPDownloader           = require("./lib/FTPDownloader.js")
 const S3Sync                  = require("./lib/S3Sync.js")
@@ -24,11 +23,11 @@ async function main() {
   let localFile = `${tmpDir}/data_temp`
 
   // Get details of current S3 object for comparison to data source
-  let S3 = new S3Sync()
+  let s3sync = new S3Sync()
   let destinationLastModified = null
 
   try {
-    destinationLastModified = await S3.lastModified({
+    destinationLastModified = await s3sync.lastModified({
       Bucket: bucketID,
       Key:    bucketPath,
     })
@@ -72,7 +71,6 @@ async function main() {
     process.exit(2)
   }
 
-  let s3 = new AWS.S3()
   // Upload to S3.
   // File must be set as public read for public download via HTTP.
   // The Cache Control "no-store" will ensure compliant proxies/browsers
@@ -82,7 +80,7 @@ async function main() {
   // of the file will be available in the future; the next Lambda run
   // may not update anything.)
   try {
-    let upload = await s3.putObject({
+    let upload = await s3sync.putObject({
       ACL:          "public-read",
       Body:         fs.readFileSync(localFile),
       Bucket:       bucketID,
@@ -93,7 +91,7 @@ async function main() {
         "Last-Modified": sourceLastModified.toUTCString()
       },
       Tagging:      "arcticconnect=arcticsensorweb"
-    }).promise()
+    })
 
     console.log("Upload succeeded.", upload)
   } catch (err) {
