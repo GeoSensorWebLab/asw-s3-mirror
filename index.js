@@ -67,6 +67,8 @@ async function main() {
     sourceLastModified = await downloader.lastModified()
 
     if (sourceLastModified <= destinationLastModified) {
+      console.log("Source last modified date:      ", sourceLastModified.toISOString())
+      console.log("Destination last modified date: ", destinationLastModified.toISOString())
       console.log("Source file is older than destination, skipping.")
       process.exit(0)
     } else {
