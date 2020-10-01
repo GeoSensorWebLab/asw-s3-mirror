@@ -12,8 +12,10 @@
   "author": "James Badger",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.742.0",
     "basic-ftp": "^4.6.2",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.765.0"
   }
 }
