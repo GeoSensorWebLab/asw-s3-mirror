@@ -35,7 +35,7 @@ A Node.js v14+ is required. NPM dependencies can be installed using `yarn instal
 
 ## DEPLOYMENT
 
-For usage with AWS Lambda, the tool must be packaged in a ZIP archive along with any dependencies. A Node.js script has been bundled to generate this ZIP file.
+For usage with AWS Lambda, the tool must be packaged in a ZIP archive along with any dependencies. A Node.js script has been bundled to generate this ZIP file: use the `build/lambda.sh` Bash script to generate a ZIP file of the necessary code from this repository.
 
 The ZIP file must then be uploaded to an S3 bucket, and that bucket configured as the source for the AWS Lambda(s). A Terraform script (private currently) is used to set up these AWS resources.
 
