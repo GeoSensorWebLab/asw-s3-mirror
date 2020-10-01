@@ -4,6 +4,7 @@
 "use strict";
 const fs                      = require("fs")
 const FTPDownloader           = require("./lib/FTPDownloader.js")
+const HTTPDownloader          = require("./lib/HTTPDownloader.js")
 const S3Sync                  = require("./lib/S3Sync.js")
 const getInputFromEnvironment = require("./lib/EnvironmentVars.js")
 const validateInput           = require("./lib/InputValidator.js")
@@ -44,8 +45,7 @@ async function main() {
   }
 
   // Download from source.
-  // Different clients are needed for different source protocols, and
-  // only FTP is supported at the moment.
+  // Different clients are needed for different source protocols.
   let sourceLastModified = null
   let url = new URL(sourceUrl)
   if (url.protocol.match(/^ftp/i) !== null) {
@@ -66,6 +66,30 @@ async function main() {
       downloader.close()
       console.log("File downloaded.")
     }
+  } else if (url.protocol.match(/^http/i) !== null) {
+    // Download from HTTP/HTTPS
+    let downloader = new HTTPDownloader(url)
+
+    // Try using If-Modified-Since to save bandwidth by not downloading
+    // a file we already have. Promise will reject (causing throw) if
+    // source is older.
+    try {
+      await downloader.saveTo(localFile, {
+        "If-Modified-Since": destinationLastModified.toUTCString()
+      })
+
+      sourceLastModified = await downloader.lastModified()
+    } catch (err) {
+      if (err === "Not Modified") {
+        console.log("Source file is not newer than destination, exiting.")
+        process.exit(0)
+      } else {
+        // Unknown error
+        console.error(err)
+        process.exit(3)
+      }
+    }
+
   } else {
     console.error("Error: Unsupported URL scheme")
     process.exit(2)
@@ -97,7 +121,7 @@ async function main() {
     console.log("Upload succeeded.", upload)
   } catch (err) {
     console.error("Cannot upload to S3.", err)
-    process.exit(3)
+    process.exit(1)
   }
 }
 
