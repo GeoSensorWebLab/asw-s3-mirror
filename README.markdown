@@ -31,7 +31,7 @@ If there are errors downloading or uploading the file, a message will be printed
 
 ## REQUIREMENTS
 
-A Node.js v14+ is required. NPM dependencies can be installed using `npm install`.
+A Node.js v14+ is required. NPM dependencies can be installed using `yarn install`.
 
 ## DEPLOYMENT
 
