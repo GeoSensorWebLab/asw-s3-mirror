@@ -29,6 +29,44 @@ If there are errors downloading or uploading the file, a message will be printed
 
 **TMP_DIR**: Path to directory where downloaded files will be stored temporarily. Files should not be expected to persist after the tool is finished. On AWS Lambda, `/tmp` should be used; for local testing, `tmp` (directory in this repo) can be used.
 
+### Special Case: Configuration via AWS Parameter Store
+
+Using Environment Variables to configure the Lambda is not a great idea when some of those values contain sensitive information such as usernames and passwords. The environment variables may be leaked into execution logs, increasing the likelihood of being accidentally made public. To solve this, the ASW S3 Mirror Tool can read the configuration from AWS Parameter Store (which supports encrypting values).
+
+To use Parameter Store *instead* of configuration through environment variables, only set the following Environment Variable:
+
+**SSM_PARAMETER**: The key containing the configuration as a JSON object
+
+When this value is not empty, all other environment variables in the previous section will be ignored. Instead all those values must be encoded as a JSON object, stored in the Parameter Store like so:
+
+```json
+{
+    "SOURCE_URL": "",
+    "BUCKET_ID": "",
+    "BUCKET_PATH": "",
+    "S3_REGION": "",
+    "TMP_DIR": ""
+}
+```
+
+The value is limited to 4096 characters. Non-significant whitespace can optionally be removed from the JSON to reduce its size if necessary. I found that the configuration for this tool easily fits in under 300 characters.
+
+(If 4096 is too small, the configuration could be separated into a separate Parameter Store value for each configuration value.)
+
+#### Additional Requirements for Parameter Store
+
+To use Parameter Store, an IAM role for the Lambda must be configured to have access to that Parameter Store key.
+
+The naming for the Parameter Store key should follow conventions for your organization. I adopted one that tries to scope the parameter by its key string:
+
+```
+/$env/$application/$instance/configuration
+/staging/asw-s3-mirror/klrs-ftp/configuration
+/prod/asw-s3-mirror/klrs-ftp/configuration
+```
+
+In this example, different environments are the first variable, allowing for testing without affecting existing production instances. The second part is the application, meaning the parameter points back to this tool. The third part scopes it to a single lambda application name, and the last part is what is stored in this parameter.
+
 ## REQUIREMENTS
 
 A Node.js v14+ is required. NPM dependencies can be installed using `yarn install`.
