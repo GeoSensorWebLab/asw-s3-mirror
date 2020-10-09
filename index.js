@@ -11,6 +11,8 @@ const validateInput           = require("./lib/InputValidator.js")
 
 // Wrap in an async function to allow usage of "await"
 async function main() {
+  let continueUpload = true
+
   let vars = await getInputFromEnvironment()
   validateInput(vars)
 
@@ -48,8 +50,9 @@ async function main() {
   // Different clients are needed for different source protocols.
   let sourceLastModified = null
   let url = new URL(sourceUrl)
-  if (url.protocol.match(/^ftp/i) !== null) {
+  if (continueUpload && url.protocol.match(/^ftp/i) !== null) {
     // connect FTP
+    console.log("Connecting to FTP.")
     let downloader = new FTPDownloader(url)
     await downloader.connect()
     // Check the last modified date of the source file. If it is *older*
@@ -60,14 +63,15 @@ async function main() {
       console.log("Source last modified date:      ", sourceLastModified.toISOString())
       console.log("Destination last modified date: ", destinationLastModified.toISOString())
       console.log("Source file is older than destination, skipping.")
-      process.exit(0)
+      continueUpload = false
     } else {
       await downloader.saveTo(localFile)
       downloader.close()
       console.log("File downloaded.")
     }
-  } else if (url.protocol.match(/^http/i) !== null) {
+  } else if (continueUpload && url.protocol.match(/^http/i) !== null) {
     // Download from HTTP/HTTPS
+    console.log("Connecting to HTTP.")
     let downloader = new HTTPDownloader(url)
 
     // Try using If-Modified-Since to save bandwidth by not downloading
@@ -82,47 +86,51 @@ async function main() {
     } catch (err) {
       if (err === "Not Modified") {
         console.log("Source file is not newer than destination, exiting.")
-        process.exit(0)
+        continueUpload = false
       } else {
         // Unknown error
         console.error(err)
         process.exit(3)
       }
     }
-
-  } else {
+  } else if (continueUpload) {
     console.error("Error: Unsupported URL scheme")
     process.exit(2)
   }
 
-  // Upload to S3.
-  // File must be set as public read for public download via HTTP.
-  // The Cache Control "no-store" will ensure compliant proxies/browsers
-  // will not store older versions of this file, and the user *always*
-  // retrieves the latest version from S3.
-  // ('Expires' is not used as it is not known whether a new version
-  // of the file will be available in the future; the next Lambda run
-  // may not update anything.)
-  try {
-    let upload = await s3sync.putObject({
-      ACL:          "public-read",
-      Body:         fs.readFileSync(localFile),
-      Bucket:       bucketID,
-      CacheControl: "no-store",
-      Key:          bucketPath,
-      Metadata:     {
-        // Setting 'Last-Modified' goes into `x-amz-meta-last-modified`,
-        // so we are explicitly setting that property instead.
-        "x-amz-meta-last-modified": sourceLastModified.toUTCString()
-      },
-      Tagging:      "arcticconnect=arcticsensorweb"
-    })
+  // Only upload if there is reason to replace with a newer version.
+  if (continueUpload) {
+    // Upload to S3.
+    // File must be set as public read for public download via HTTP.
+    // The Cache Control "no-store" will ensure compliant proxies/browsers
+    // will not store older versions of this file, and the user *always*
+    // retrieves the latest version from S3.
+    // ('Expires' is not used as it is not known whether a new version
+    // of the file will be available in the future; the next Lambda run
+    // may not update anything.)
+    try {
+      let upload = await s3sync.putObject({
+        ACL:          "public-read",
+        Body:         fs.readFileSync(localFile),
+        Bucket:       bucketID,
+        CacheControl: "no-store",
+        Key:          bucketPath,
+        Metadata:     {
+          // Setting 'Last-Modified' goes into `x-amz-meta-last-modified`,
+          // so we are explicitly setting that property instead.
+          "x-amz-meta-last-modified": sourceLastModified.toUTCString()
+        },
+        Tagging:      "arcticconnect=arcticsensorweb"
+      })
 
-    console.log("Upload succeeded.", upload)
-  } catch (err) {
-    console.error("Cannot upload to S3.", err)
-    process.exit(1)
+      console.log("Upload succeeded.", upload)
+    } catch (err) {
+      console.error("Cannot upload to S3.", err)
+      process.exit(1)
+    }
   }
+
+  return true
 }
 
 exports.handler = main
