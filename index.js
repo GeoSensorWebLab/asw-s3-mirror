@@ -11,7 +11,7 @@ const validateInput           = require("./lib/InputValidator.js")
 
 // Wrap in an async function to allow usage of "await"
 async function main() {
-  let vars = getInputFromEnvironment()
+  let vars = await getInputFromEnvironment()
   validateInput(vars)
 
   // Check for Environment Variables
@@ -125,4 +125,4 @@ async function main() {
   }
 }
 
-main()
+exports.handler = main
